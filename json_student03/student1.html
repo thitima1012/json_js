@@ -71,8 +71,8 @@
         </tbody>
     </table>
 <!-- ปุ่ม Export -->
-    <div style="text-align: center; margin-bottom: 20px;">
-        <button onclick="exportTable()">Export ไฟล์</button>
+    <div style="text-align: center; margin-bottom: 20px; ">
+        <button  onclick="exportTable()">Export ไฟล์</button>
     </div>
     <script>
         function toggleAttendance(cell) {
@@ -162,29 +162,38 @@
         }
 
         function exportTable() {
-            // สร้างไฟล์ CSV จากข้อมูลในตาราง
+            // ดึงข้อมูลจากตารางเพื่อสร้าง JSON
             const rows = document.querySelectorAll('#attendance-table tbody tr');
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "รหัสประจำตัว,ชื่อ,สัปดาห์ 1,สัปดาห์ 2,สัปดาห์ 3,สัปดาห์ 4\n";
+            const jsonData = [];
 
             rows.forEach(row => {
-                const rowData = [];
-                row.querySelectorAll('td').forEach(cell => {
-                    rowData.push(cell.textContent);
-                });
-                csvContent += rowData.join(",") + "\n";
+                const rowData = {};
+                rowData['รหัสประจำตัว'] = row.querySelector('td:nth-child(1)').textContent;
+                rowData['ชื่อ'] = row.querySelector('td:nth-child(2)').textContent;
+                rowData['สัปดาห์ 1'] = row.querySelector('td:nth-child(3)').textContent;
+                rowData['สัปดาห์ 2'] = row.querySelector('td:nth-child(4)').textContent;
+                rowData['สัปดาห์ 3'] = row.querySelector('td:nth-child(5)').textContent;
+                rowData['สัปดาห์ 4'] = row.querySelector('td:nth-child(6)').textContent;
+                jsonData.push(rowData);
             });
 
+            // แปลง JSON เป็นข้อความ
+            const jsonString = JSON.stringify(jsonData, null, 2);
+
             // สร้างลิงก์สำหรับดาวน์โหลด
-            const encodedUri = encodeURI(csvContent);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            // สร้างลิงก์สำหรับดาวน์โหลด
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "student_attendance.csv");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "student_attendance.json");
             document.body.appendChild(link);
 
             // คลิกลิงก์เพื่อดาวน์โหลดไฟล์
             link.click();
         }
+
     </script>
 </body>
 </html>
