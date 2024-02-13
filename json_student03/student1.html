@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 70%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+
+        }
+        th, td {
+            border: 1px solid #000000;
+            text-align: left;
+            padding: 5px;
+        }
+        th {
+            background-color: #d8d5d5;
+            text-align: center;
+        }
+        .present {
+            background-color: lightgreen;
+        }
+        .absent {
+            background-color: #ff9999;
+        }
+    </style>
+</head>
+<body>
+    <h1>รายชื่อการเข้าเรียน</h1>
+    <div id="add-form" style="text-align: center; margin-bottom: 20px;">
+        <label for="student-id">รหัสประจำตัว:</label>
+        <input type="text" id="student-id">
+        <label for="student-name">ชื่อ:</label>
+        <input type="text" id="student-name">
+        <button onclick="addStudent()">เพิ่มชื่อ</button>
+    </div>
+    <div id="search-form" style="text-align: center; margin-bottom: 20px;">
+        <label for="search">ค้นหาชื่อ:</label>
+        <input type="text" id="search" oninput="filterNames()">
+    </div>
+    
+    <!-- ตารางแสดงข้อมูลการเข้าเรียน -->
+    <table id="attendance-table">
+        <thead>
+            <tr>
+                <th>รหัสประจำตัว</th>
+                <th>ชื่อ</th>
+                <th>สัปดาห์ 1</th>
+                <th>สัปดาห์ 2</th>
+                <th>สัปดาห์ 3</th>
+                <th>สัปดาห์ 4</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Data will be populated here -->
+        </tbody>
+    </table>
+<!-- ปุ่ม Export -->
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button onclick="exportTable()">Export ไฟล์</button>
+    </div>
+    <script>
+        function toggleAttendance(cell) {
+            const status = cell.textContent.trim(); // ดึงสถานะปัจจุบันของเซลล์
+            if (status === 'มา') {
+                cell.classList.remove('present');
+                cell.classList.add('absent');
+                cell.textContent = 'ไม่มา'; // เปลี่ยนข้อความในเซลล์เป็น "ไม่มา"
+        } else if (status === 'ไม่มา' || status === '') {
+            cell.classList.remove('absent');
+            cell.classList.add('present');
+            cell.textContent = 'มา'; // เปลี่ยนข้อความในเซลล์เป็น "มา"
+        }
+}
+
+        function loadAttendanceData() {
+            fetch('student_attendance.json')
+                .then(response => response.json())
+                .then(data => {
+                    const tableContainer = document.getElementById('attendance-table');
+
+                    // Populate table with data
+                    data.forEach(student => {
+                        const studentRow = document.createElement('tr');
+                        studentRow.innerHTML = `
+                            <td>${student['รหัสประจำตัว']}</td>
+                            <td>${student['ชื่อ']}</td>
+                            <td class="week" onclick="toggleAttendance(this)">${student['สัปดาห์1']}</td>
+                            <td class="week" onclick="toggleAttendance(this)">${student['สัปดาห์2']}</td>
+                            <td class="week" onclick="toggleAttendance(this)">${student['สัปดาห์3']}</td>
+                            <td class="week" onclick="toggleAttendance(this)">${student['สัปดาห์4']}</td>
+                        `;
+                        tableContainer.querySelector('tbody').appendChild(studentRow);
+                    });
+                })
+                .catch(error => console.error('Error loading the data:', error));
+        }
+
+        window.onload = loadAttendanceData;
+
+        function addStudent() {
+            const studentIdInput = document.getElementById('student-id');
+            const studentNameInput = document.getElementById('student-name');
+
+            const studentId = studentIdInput.value.trim();
+            const studentName = studentNameInput.value.trim();
+
+            if (studentId === '' || studentName === '') {
+                alert('โปรดกรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+
+            const tableBody = document.querySelector('#attendance-table tbody');
+
+            // สร้างแถวใหม่
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${studentId}</td>
+                <td>${studentName}</td>
+                <td class="week" onclick="toggleAttendance(this)"></td>
+                <td class="week" onclick="toggleAttendance(this)"></td>
+                <td class="week" onclick="toggleAttendance(this)"></td>
+                <td class="week" onclick="toggleAttendance(this)"></td>
+            `;
+
+            // เพิ่มแถวใหม่ลงในตาราง
+            tableBody.appendChild(newRow);
+
+            // เคลียร์ข้อมูลในช่อง input
+            studentIdInput.value = '';
+            studentNameInput.value = '';
+        }
+
+        function filterNames() {
+            const searchText = document.getElementById('search').value.toUpperCase();
+            const rows = document.querySelectorAll('#attendance-table tbody tr');
+
+            rows.forEach(row => {
+                const nameCell = row.querySelector('td:nth-child(2)');
+                const name = nameCell.textContent.toUpperCase();
+                if (name.includes(searchText)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function exportTable() {
+            // สร้างไฟล์ CSV จากข้อมูลในตาราง
+            const rows = document.querySelectorAll('#attendance-table tbody tr');
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "รหัสประจำตัว,ชื่อ,สัปดาห์ 1,สัปดาห์ 2,สัปดาห์ 3,สัปดาห์ 4\n";
+
+            rows.forEach(row => {
+                const rowData = [];
+                row.querySelectorAll('td').forEach(cell => {
+                    rowData.push(cell.textContent);
+                });
+                csvContent += rowData.join(",") + "\n";
+            });
+
+            // สร้างลิงก์สำหรับดาวน์โหลด
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "student_attendance.csv");
+            document.body.appendChild(link);
+
+            // คลิกลิงก์เพื่อดาวน์โหลดไฟล์
+            link.click();
+        }
+    </script>
+</body>
+</html>
